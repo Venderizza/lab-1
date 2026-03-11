@@ -1,0 +1,21 @@
+services:
+
+  app:
+    build: 
+      context: ./app
+      dockerfile: Dockerfile
+
+  db:
+    image: postgres
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+        - 5134:5134
+        
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
