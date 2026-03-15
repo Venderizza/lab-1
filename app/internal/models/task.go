@@ -16,13 +16,9 @@ const (
 
 type Task struct {
 	gorm.Model
-	CategoryID uint
-	Category   Category `gorm:"foreignKey:CategoryID"`
-
-	CompletedAt *time.Time
 	Title       string
-	Description *string
+	Description string
 	Done        bool
 	Priority    Priority
-	Deadline    *time.Time
+	Deadline    *time.Time `gorm:"default:NULL"`
 }

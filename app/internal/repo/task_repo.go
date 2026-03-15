@@ -9,18 +9,20 @@ import (
 )
 
 type TaskRepository interface {
-	Create(task *models.Task) error
-	GetByID(id int64) (*models.Task, error)
-	GetAll() ([]models.Task, error)
-	Update(id int64) error
-	Delete(id int64) error
+	Create(ctx context.Context, task *models.Task) error
+	GetAll(ctx context.Context) ([]models.Task, error)
+	GetByID(ctx context.Context, id uint) (*models.Task, error)
+	GetByPriority(ctx context.Context, id int) ([]models.Task, error)
+	ToggleDone(ctx context.Context, id uint) error
+	Update(ctx context.Context, task *models.Task) error
+	Delete(ctx context.Context, id uint) error
 }
 
 type TaskIMP struct {
 	db *gorm.DB
 }
 
-func NewTaskRepo(db *gorm.DB) *TaskIMP {
+func NewTaskRepo(db *gorm.DB) TaskRepository {
 	return &TaskIMP{db: db}
 }
 
@@ -28,9 +30,19 @@ func (r *TaskIMP) Create(ctx context.Context, task *models.Task) error {
 	return r.db.WithContext(ctx).Create(task).Error
 }
 
-func (r *TaskIMP) GetByID(ctx context.Context, id int64) (*models.Task, error) {
-	var user models.Task
-	err := r.db.WithContext(ctx).First(&user, id).Error
+func (r *TaskIMP) GetAll(ctx context.Context) ([]models.Task, error) {
+	var tasks []models.Task
+
+	if err := r.db.WithContext(ctx).Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+func (r *TaskIMP) GetByID(ctx context.Context, id uint) (*models.Task, error) {
+	var task models.Task
+	err := r.db.WithContext(ctx).First(&task, id).Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -39,16 +51,30 @@ func (r *TaskIMP) GetByID(ctx context.Context, id int64) (*models.Task, error) {
 		return nil, err
 	}
 
-	return &user, nil
+	return &task, nil
 }
 
-func (r *TaskIMP) GetAll() ([]models.Task, error) {
+func (r *TaskIMP) GetByPriority(ctx context.Context, priority int) ([]models.Task, error) {
 	var tasks []models.Task
-
-	err := r.db.WithContext(nil).Find(&tasks).Error
-	if err != nil {
+	if err := r.db.WithContext(ctx).
+		Where("priority = ?", priority).
+		Find(&tasks).Error; err != nil {
 		return nil, err
 	}
-
 	return tasks, nil
+}
+
+func (r *TaskIMP) Update(ctx context.Context, task *models.Task) error {
+	return r.db.WithContext(ctx).Model(&models.Task{}).Where("id = ?", task.ID).Updates(task).Error
+}
+
+func (r *TaskIMP) ToggleDone(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).
+		Model(&models.Task{}).
+		Where("id = ?", id).
+		Update("done", gorm.Expr("NOT done")).Error
+}
+
+func (r *TaskIMP) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&models.Task{}, id).Error
 }
