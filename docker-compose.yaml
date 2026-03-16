@@ -1,21 +1,35 @@
+version: "3.8"
+
 services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - todonet
 
   app:
-    build: 
-      context: ./app
+    build:
+      context: ./app/
       dockerfile: Dockerfile
+    restart: on-failure
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    networks:
+      - todonet
 
-  db:
-    image: postgres
-    restart: always
-    shm_size: 128mb
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-        - 5134:5134
-        
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8080:8080
+volumes:
+  db_data: {}
+
+networks:
+  todonet:
+    driver: bridge

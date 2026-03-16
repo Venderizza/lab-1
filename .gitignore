@@ -1,0 +1,16 @@
+/taskapp
+/bin
+*.exe
+*.dll
+*.so
+
+/vendor/
+/pkg/
+*.test
+
+.vscode/
+.idea/
+
+.env
+
+db_data/
