@@ -13,6 +13,12 @@ services:
     networks:
       - todonet
 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   app:
     build:
       context: ./app/
@@ -20,10 +26,14 @@ services:
     restart: on-failure
     env_file:
       - .env
+
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
     ports:
       - "3000:3000"
+
     networks:
       - todonet
 
