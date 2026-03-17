@@ -25,6 +25,11 @@ func (h *TaskHandler) CreateTask(c *fiber.Ctx) error {
 			JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
+	if err := taskdto.Validate(); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
 	task, err := h.taskService.CreateTask(ctx, &taskdto)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -15,13 +14,13 @@ import (
 var DB *gorm.DB
 
 func Connect() {
-	host := getEnv("DB_HOST", "localhost")
-	port := getEnv("DB_PORT", "5432")
-	user := getEnv("DB_USER", "postgres")
-	password := getEnv("DB_PASSWORD", "")
-	dbname := getEnv("DB_NAME", "tasks")
-	sslmode := getEnv("DB_SSLMODE", "disable")
-	timezone := getEnv("DB_TIMEZONE", "UTC")
+	host := getEnv("DB_HOST")
+	port := getEnv("DB_PORT")
+	user := getEnv("DB_USER")
+	password := getEnv("DB_PASSWORD")
+	dbname := getEnv("DB_NAME")
+	sslmode := getEnv("DB_SSLMODE")
+	timezone := getEnv("DB_TIMEZONE")
 
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s",
@@ -29,15 +28,7 @@ func Connect() {
 	)
 
 	var err error
-	for i := 0; i < 10; i++ {
-		DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-		if err == nil {
-			break
-		}
-		log.Printf("Postgres not ready, retrying in 3s... (%d/10): %v", i+1, err)
-		time.Sleep(3 * time.Second)
-	}
-
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
@@ -47,9 +38,10 @@ func Connect() {
 	}
 }
 
-func getEnv(key string, fallback string) string {
-	if v, ok := os.LookupEnv(key); ok && v != "" {
-		return v
+func getEnv(key string) string {
+	value, exists := os.LookupEnv(key)
+	if !exists || value == "" {
+		log.Fatalf("Environment variable %s is required but not set", key)
 	}
-	return fallback
+	return value
 }

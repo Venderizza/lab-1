@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"errors"
 	"lab-1/internal/models"
 	"time"
 )
@@ -42,4 +43,11 @@ func NewTaskResponseDTO(task models.Task) TaskResponseDTO {
 		Deadline:    task.Deadline,
 		Done:        task.Done,
 	}
+}
+
+func (dto *CreateTaskDTO) Validate() error {
+	if dto.Title == "" {
+		return errors.New("title is required")
+	}
+	return nil
 }
