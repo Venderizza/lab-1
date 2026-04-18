@@ -48,6 +48,7 @@ jobs:
         uses: golangci/golangci-lint-action@v7
         with:
           version: v2.11.4
+          working-directory: app
 
       - name: Run lint
         run: golangci-lint run --config .golangci.yml ./...
