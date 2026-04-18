@@ -20,5 +20,7 @@ func main() {
 	taskRouter := router.NewTaskRouter(app, taskHandler)
 	taskRouter.RegisterRoutes()
 
-	app.Listen(":3000")
+	if err := app.Listen(":3000"); err != nil {
+		panic(err)
+	}
 }
