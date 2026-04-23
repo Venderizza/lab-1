@@ -32,6 +32,8 @@ func (s *TaskService) CreateTask(ctx context.Context, dto *dto.CreateTaskDTO) (*
 		deadline = &dto.Deadline
 	}
 
+	tmp := 5
+
 	task := &models.Task{
 		Title:       dto.Title,
 		Description: dto.Description,
