@@ -2,10 +2,11 @@ name: ci-cd
 
 on:
   pull_request:
-    branches: [ lab-2 ]
+    branches: [lab-2]
+  push:
+    branches: [lab-2]
 
 env:
-  GO_VERSION: "1.25"
   IMAGE_NAME: ${{ vars.DOCKERHUB_IMAGE }}
 
 jobs:
@@ -14,13 +15,13 @@ jobs:
     defaults:
       run:
         working-directory: app
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
+          go-version-file: app/go.mod
           cache-dependency-path: app/go.sum
 
       - name: Build
@@ -31,77 +32,71 @@ jobs:
     defaults:
       run:
         working-directory: app
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
+          go-version-file: app/go.mod
           cache-dependency-path: app/go.sum
 
-      - name: Add Go bin to PATH
-        run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-
-      - name: Install golangci-lint
+      - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
           version: v2.11.4
           working-directory: app
-
-      - name: Run lint
-        run: golangci-lint run --config .golangci.yml ./...
 
   test:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: app
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
+          go-version-file: app/go.mod
           cache-dependency-path: app/go.sum
 
       - name: Run tests with coverage
         run: |
           go test ./... -covermode=atomic -coverprofile=coverage.out
-          go tool cover -func=coverage.out | tee coverage.txt
+
+      - name: Check coverage >= 50%
+        run: |
           COVERAGE=$(go tool cover -func=coverage.out | awk '/total:/ {gsub("%","",$3); print $3}')
           echo "Total coverage: ${COVERAGE}%"
           awk "BEGIN {exit !($COVERAGE >= 50)}"
 
-      - name: Upload coverage artifacts
+      - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: |
-            app/coverage.out
-            app/coverage.txt
+          path: app/coverage.out
 
-  docker_build:
+  docker:
     needs: [build, lint, test]
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Build image
-        run: |
-          SHORT_SHA="${GITHUB_SHA::7}"
-          docker build -f app/Dockerfile -t "${IMAGE_NAME}:${SHORT_SHA}" app
+    - name: Build Docker image
+      run: |
+        docker build -f app/Dockerfile \
+          -t "${IMAGE_NAME}:${GITHUB_SHA::7}" app
 
-      - name: Login to Docker Hub
-        if: github.event_name == 'push' && github.ref == 'refs/heads/lab-2'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Login to Docker Hub
+      if: github.event_name == 'push' && github.ref == 'refs/heads/lab-2'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Push image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/lab-2'
-        run: |
-          SHORT_SHA="${GITHUB_SHA::7}"
-          docker push "${IMAGE_NAME}:${SHORT_SHA}"
+    - name: Push image
+      if: github.event_name == 'push' && github.ref == 'refs/heads/lab-2'
+      run: |
+        docker push "${IMAGE_NAME}:${GITHUB_SHA::7}"
