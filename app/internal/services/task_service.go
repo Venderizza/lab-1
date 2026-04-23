@@ -32,8 +32,6 @@ func (s *TaskService) CreateTask(ctx context.Context, dto *dto.CreateTaskDTO) (*
 		deadline = &dto.Deadline
 	}
 
-	tmp := 5
-
 	task := &models.Task{
 		Title:       dto.Title,
 		Description: dto.Description,
@@ -42,9 +40,12 @@ func (s *TaskService) CreateTask(ctx context.Context, dto *dto.CreateTaskDTO) (*
 		Deadline:    deadline,
 	}
 
-	if err := s.taskRepo.Create(ctx, task); err != nil {
-		return nil, err
-	}
+	// if err := s.taskRepo.Create(ctx, task); err != nil {
+	// 	return nil, err
+	// }
+
+	s.taskRepo.Create(ctx, task) // Ошибка не проверяется!
+
 	return task, nil
 }
 
