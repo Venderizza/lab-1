@@ -40,11 +40,9 @@ func (s *TaskService) CreateTask(ctx context.Context, dto *dto.CreateTaskDTO) (*
 		Deadline:    deadline,
 	}
 
-	// if err := s.taskRepo.Create(ctx, task); err != nil {
-	// 	return nil, err
-	// }
-
-	s.taskRepo.Create(ctx, task) // Ошибка не проверяется!
+	if err := s.taskRepo.Create(ctx, task); err != nil {
+		return nil, err
+	}
 
 	return task, nil
 }
